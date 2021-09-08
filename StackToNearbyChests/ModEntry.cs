@@ -1,12 +1,15 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
+using StackToNearbyChests.Patches;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using System;
+using System.Reflection;
 
 namespace StackToNearbyChests
 {
 	/// <summary>The mod entry class loaded by SMAPI.</summary>
-	class ModEntry : Mod
+	public class ModEntry : Mod
 	{
 		internal static ModConfig Config { get; private set; }
 
@@ -15,7 +18,7 @@ namespace StackToNearbyChests
 		public override void Entry(IModHelper helper)
 		{
 			Config = helper.ReadConfig<ModConfig>();
-			ButtonHolder.ButtonIcon = helper.Content.Load<Texture2D>(@"icon.png");
+			ButtonHolder.ButtonIcon = helper.Content.Load<Texture2D>(@"Assets\\icon.png");
 
 			helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 		}
@@ -25,7 +28,15 @@ namespace StackToNearbyChests
 		/// <param name="e">The event data.</param>
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
-			Patch.PatchAll(HarmonyInstance.Create("me.ilyaki.StackToNearbyChests"));
+			var harmony = new Harmony(this.ModManifest.UniqueID);
+
+			// Manually patch InventoryPage constructor, otherwise Harmony cannot find method.
+			harmony.Patch(
+				original: AccessTools.Constructor(typeof(StardewValley.Menus.InventoryPage), new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) }),
+				postfix: new HarmonyMethod(typeof(InventoryPageConstructorPatch), nameof(InventoryPageConstructorPatch.Postfix))
+			);
+
+			harmony.PatchAll();
 		}
 	}
 }

@@ -1,6 +1,6 @@
 ﻿namespace StackToNearbyChests
 {
-	class ModConfig
+	public class ModConfig
 	{
 		public int Radius { get; set; } = 5;
 	}

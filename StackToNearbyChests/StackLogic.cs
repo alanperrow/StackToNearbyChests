@@ -4,73 +4,137 @@ using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
+using StardewValley.Menus;
 using StardewValley.Objects;
+using static StardewValley.Menus.ItemGrabMenu;
 
 namespace StackToNearbyChests
 {
 	static class StackLogic
 	{
-		internal static void StackToNearbyChests(int radius)
+		internal static bool StackToNearbyChests(int radius)
 		{
-
-			StardewValley.Farmer farmer = Game1.player;
+			bool movedAtLeastOne = false;
+			Farmer farmer = Game1.player;
 
 			foreach (Chest chest in GetChestsAroundFarmer(farmer, radius))
 			{
 				List<Item> itemsToRemoveFromPlayer = new List<Item>();
-				bool movedAtLeastOne = false;
 
 				//Find remaining stack size of CHEST item. check if player has the item, then remove as much as possible
-				//need to compare quality
 				foreach (Item chestItem in chest.items)
 				{
-					if (chestItem != null)
+					if (chestItem == null)
 					{
-						foreach (Item playerItem in farmer.Items)
-						{
-							if (playerItem != null)
-							{
-								int remainingStackSize = chestItem.getRemainingStackSpace();
-								if (!(itemsToRemoveFromPlayer.Contains(playerItem)) && playerItem.canStackWith(chestItem))
-								{
-									movedAtLeastOne = true;
-									int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
-									chestItem.Stack += amountToRemove;
+						continue;
+					}
 
-									if (playerItem.Stack > amountToRemove)
-									{
-										playerItem.Stack -= amountToRemove;
-									}
-									else
-									{
-										itemsToRemoveFromPlayer.Add(playerItem);
-									}
-								}
+					foreach (Item playerItem in farmer.Items)
+					{
+						if (playerItem == null)
+						{
+							continue;
+						}
+
+						int remainingStackSize = chestItem.getRemainingStackSpace();
+
+						if (!itemsToRemoveFromPlayer.Contains(playerItem) && playerItem.canStackWith(chestItem))
+						{
+							movedAtLeastOne = true;
+							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
+							chestItem.Stack += amountToRemove;
+
+							if (playerItem.Stack > amountToRemove)
+							{
+								playerItem.Stack -= amountToRemove;
+							}
+							else
+							{
+								itemsToRemoveFromPlayer.Add(playerItem);
 							}
 						}
 					}
 				}
 
-				foreach (Item removeItem in itemsToRemoveFromPlayer)
-					farmer.removeItemFromInventory(removeItem);
-
-
-
-				//List of sounds: https://gist.github.com/gasolinewaltz/46b1473415d412e220a21cb84dd9aad6
-				if (movedAtLeastOne)
-					Game1.playSound(Game1.soundBank.GetCue("pickUpItem").Name);
-
+				itemsToRemoveFromPlayer.ForEach(x => farmer.removeItemFromInventory(x));
 			}
 
+			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
 
-
+			return movedAtLeastOne;
 		}
 
-		private static IEnumerable<Chest> GetChestsAroundFarmer(StardewValley.Farmer farmer, int radius)
+		internal static bool StackToNearbyChests(int radius, InventoryPage inventoryPage)
+		{
+			if (inventoryPage == null)
+			{
+				return StackToNearbyChests(radius);
+			}
+
+			bool movedAtLeastOne = false;
+			Farmer farmer = Game1.player;
+
+			foreach (Chest chest in GetChestsAroundFarmer(farmer, radius))
+			{
+				List<Item> itemsToRemoveFromPlayer = new List<Item>();
+
+				//Find remaining stack size of CHEST item. check if player has the item, then remove as much as possible
+				foreach (Item chestItem in chest.items)
+				{
+					if (chestItem == null)
+					{
+						continue;
+					}
+
+					for(int i = 0; i < inventoryPage.inventory.actualInventory.Count; i++)
+					{
+						Item playerItem = inventoryPage.inventory.actualInventory[i];
+
+						if (playerItem == null)
+						{
+							continue;
+						}
+
+						int remainingStackSize = chestItem.getRemainingStackSpace();
+
+						if (playerItem.canStackWith(chestItem))
+						{
+							movedAtLeastOne = true;
+							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
+							chestItem.Stack += amountToRemove;
+
+							if (playerItem.Stack > amountToRemove)
+							{
+								playerItem.Stack -= amountToRemove;
+							}
+							else
+							{
+								itemsToRemoveFromPlayer.Add(playerItem);
+
+								ButtonHolder.AddTransferredItemSprite(new TransferredItemSprite(
+									playerItem.getOne(), inventoryPage.inventory.inventory[i].bounds.X, inventoryPage.inventory.inventory[i].bounds.Y)
+								);
+							}
+						}
+					}
+				}
+
+				itemsToRemoveFromPlayer.ForEach(x => farmer.removeItemFromInventory(x));
+			}
+
+			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
+
+			return movedAtLeastOne;
+		}
+
+		internal static IEnumerable<Chest> GetChestsAroundFarmer(Farmer farmer, int radius)
 		{
 			Vector2 farmerLocation = farmer.getTileLocation();
 
 			//Normal object chests
+			/*
+			 * TODO: Verify this works with stone chests as well
+			 */
 			for (int dx = -radius; dx <= radius; dx++)
 			{
 				for (int dy = -radius; dy <= radius; dy++)
@@ -85,6 +149,10 @@ namespace StackToNearbyChests
 					}
 				}
 			}
+
+			/*
+			 * TODO: Mini Fridge
+			 */
 
 			//Fridge
 			if (farmer?.currentLocation is FarmHouse farmHouse && farmHouse.upgradeLevel >= 1) //Lvl 1,2,3 is where you have fridge upgrade
