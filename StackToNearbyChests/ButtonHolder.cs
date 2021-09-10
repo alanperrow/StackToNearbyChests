@@ -6,6 +6,11 @@ using static StardewValley.Menus.ItemGrabMenu;
 
 namespace StackToNearbyChests
 {
+	/*
+	 * TODO: Rename to InventoryHandler (or something like that). ((Mod will be named "Convenient Inventory".))
+	 *       Implement favorited items, which will be ignored by "Quick Stack To Nearby Chests" button.
+	 *       Postfix "Add To Existing Stacks" button logic to ignore favorited items as well.
+	 */
 	class ButtonHolder
 	{
 		private const int buttonID = 1070000;//A random number
@@ -43,10 +48,12 @@ namespace StackToNearbyChests
 
 		public static void ReceiveLeftClick(int x, int y)
 		{
+			// TODO:
+
 			if (button != null && button.containsPoint(x, y))
 			{
 				// TODO: Make button shake if successfully stacked
-				/*if */StackLogic.StackToNearbyChests(ModEntry.Config.Radius, inventoryPage);
+				/*if */StackLogic.StackToNearbyChests(ModEntry.Config.Range, inventoryPage);
 				/* {
 				 *	this._iconShakeTimer[index] = Game1.currentGameTime.TotalGameTime.TotalSeconds + 0.5;
 				 * }

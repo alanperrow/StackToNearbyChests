@@ -9,9 +9,9 @@ using System.Reflection;
 namespace StackToNearbyChests
 {
 	/// <summary>The mod entry class loaded by SMAPI.</summary>
-	public class ModEntry : Mod
+	internal class ModEntry : Mod
 	{
-		internal static ModConfig Config { get; private set; }
+		public static ModConfig Config { get; private set; }
 
 		/// <summary>The mod entry point, called after the mod is first loaded.</summary>
 		/// <param name="helper">Provides simplified APIs for writing mods.</param>

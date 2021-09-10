@@ -2,6 +2,6 @@
 {
 	public class ModConfig
 	{
-		public int Radius { get; set; } = 5;
+		public int Range { get; set; } = 5;
 	}
 }

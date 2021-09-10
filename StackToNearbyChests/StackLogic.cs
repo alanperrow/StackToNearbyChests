@@ -12,12 +12,12 @@ namespace StackToNearbyChests
 {
 	static class StackLogic
 	{
-		internal static bool StackToNearbyChests(int radius)
+		internal static bool StackToNearbyChests(int range)
 		{
 			bool movedAtLeastOne = false;
-			Farmer farmer = Game1.player;
+			Farmer who = Game1.player;
 
-			foreach (Chest chest in GetChestsAroundFarmer(farmer, radius))
+			foreach (Chest chest in GetChestsAroundFarmer(who, range))
 			{
 				List<Item> itemsToRemoveFromPlayer = new List<Item>();
 
@@ -29,7 +29,7 @@ namespace StackToNearbyChests
 						continue;
 					}
 
-					foreach (Item playerItem in farmer.Items)
+					foreach (Item playerItem in who.Items)
 					{
 						if (playerItem == null)
 						{
@@ -56,7 +56,7 @@ namespace StackToNearbyChests
 					}
 				}
 
-				itemsToRemoveFromPlayer.ForEach(x => farmer.removeItemFromInventory(x));
+				itemsToRemoveFromPlayer.ForEach(x => who.removeItemFromInventory(x));
 			}
 
 			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
@@ -64,17 +64,17 @@ namespace StackToNearbyChests
 			return movedAtLeastOne;
 		}
 
-		internal static bool StackToNearbyChests(int radius, InventoryPage inventoryPage)
+		internal static bool StackToNearbyChests(int range, InventoryPage inventoryPage)
 		{
 			if (inventoryPage == null)
 			{
-				return StackToNearbyChests(radius);
+				return StackToNearbyChests(range);
 			}
 
 			bool movedAtLeastOne = false;
-			Farmer farmer = Game1.player;
+			Farmer who = Game1.player;
 
-			foreach (Chest chest in GetChestsAroundFarmer(farmer, radius))
+			foreach (Chest chest in SortByDistance(who, GetChestsAroundFarmer(who, range)))
 			{
 				List<Item> itemsToRemoveFromPlayer = new List<Item>();
 
@@ -119,7 +119,7 @@ namespace StackToNearbyChests
 					}
 				}
 
-				itemsToRemoveFromPlayer.ForEach(x => farmer.removeItemFromInventory(x));
+				itemsToRemoveFromPlayer.ForEach(x => who.removeItemFromInventory(x));
 			}
 
 			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
@@ -127,20 +127,26 @@ namespace StackToNearbyChests
 			return movedAtLeastOne;
 		}
 
-		internal static IEnumerable<Chest> GetChestsAroundFarmer(Farmer farmer, int radius)
+		internal static IEnumerable<Chest> GetChestsAroundFarmer(Farmer who, int range)
 		{
-			Vector2 farmerLocation = farmer.getTileLocation();
+			if (who is null)
+            {
+				yield break;
+            }
 
-			//Normal object chests
+			Vector2 farmerTileLocation = who.getTileLocation();
+			GameLocation gameLocation = who.currentLocation;
+
+			// Chest objects (includes mini fridge, ...)
 			/*
 			 * TODO: Verify this works with stone chests as well
 			 */
-			for (int dx = -radius; dx <= radius; dx++)
+			for (int dx = -range; dx <= range; dx++)
 			{
-				for (int dy = -radius; dy <= radius; dy++)
+				for (int dy = -range; dy <= range; dy++)
 				{
-					Vector2 checkLocation = Game1.tileSize * (farmerLocation + new Vector2(dx, dy));
-					StardewValley.Object blockObject = farmer.currentLocation.getObjectAt((int)checkLocation.X, (int)checkLocation.Y);
+					Vector2 checkLocation = Game1.tileSize * (farmerTileLocation + new Vector2(dx, dy));
+					StardewValley.Object blockObject = gameLocation.getObjectAt((int)checkLocation.X, (int)checkLocation.Y);
 
 					if (blockObject is Chest)
 					{
@@ -150,17 +156,13 @@ namespace StackToNearbyChests
 				}
 			}
 
-			/*
-			 * TODO: Mini Fridge
-			 */
-
-			//Fridge
-			if (farmer?.currentLocation is FarmHouse farmHouse && farmHouse.upgradeLevel >= 1) //Lvl 1,2,3 is where you have fridge upgrade
+			// Fridge included with kitchen
+			if (who.currentLocation is FarmHouse farmHouse && farmHouse.upgradeLevel >= 1) //Lvl 1,2,3 is where you have fridge upgrade
 			{
-				Point fridgeLocation = farmHouse.getKitchenStandingSpot();
-				fridgeLocation.X += 2; fridgeLocation.Y += -1; //Fridge spot relative to kitchen spot
+				Point kitchenStandingSpot = farmHouse.getKitchenStandingSpot();
+				Point fridgeTileLocation = new Point(kitchenStandingSpot.X + 2, kitchenStandingSpot.Y - 1); //Fridge spot relative to kitchen spot
 
-				if (Math.Abs(farmerLocation.X - fridgeLocation.X) <= radius && Math.Abs(farmerLocation.Y - fridgeLocation.Y) <= radius)
+				if (Math.Abs(farmerTileLocation.X - fridgeTileLocation.X) <= range && Math.Abs(farmerTileLocation.Y - fridgeTileLocation.Y) <= range)
 				{
 					if (farmHouse.fridge.Value != null)
 						yield return farmHouse.fridge.Value;
@@ -169,12 +171,12 @@ namespace StackToNearbyChests
 				}
 			}
 
-			//Mills and Junimo Huts
-			if (farmer.currentLocation is BuildableGameLocation buildableGameLocation)
+			// Mills and Junimo Huts
+			if (who.currentLocation is BuildableGameLocation buildableGameLocation)
 			{
 				foreach (Building building in buildableGameLocation.buildings)
 				{
-					if (Math.Abs(building.tileX.Value - farmerLocation.X) <= radius && Math.Abs(building.tileY.Value - farmerLocation.Y) <= radius)
+					if (Math.Abs(building.tileX.Value - farmerTileLocation.X) <= range && Math.Abs(building.tileY.Value - farmerTileLocation.Y) <= range)
 					{
 						if (building is JunimoHut junimoHut)
 							yield return junimoHut.output.Value;
@@ -183,6 +185,14 @@ namespace StackToNearbyChests
 					}
 				}
 			}
+		}
+
+		internal static IEnumerable<Vector2> GetNearbyTileLocationsSortedByDistance(Point origin, int range)
+		{
+			//from origin, return all nearby integer points sorted based on point distance formula, within a given square radius.
+
+
+			yield break;
 		}
 	}
 }
