@@ -107,25 +107,31 @@ namespace StackToNearbyChests
 							{
 								playerItem.Stack -= amountToRemove;
 
+								if (ModEntry.Config.IsStackOverflowItems)
+								{
+									// Reference StardewValley.ItemGrabMenu ~ line 1000
+								}
+
 								/*
 								 * TODO: When chests are full and can't accept the item, make the item shake in inventory (as visual feedback for player).
 								 *		 Reference the "Add To Existing Stacks" code for making items shake.
 								 */
-								//ButtonHolder.ShakeItem();
+								if (amountToRemove != 0)
+								{
+									inventoryPage.inventory.ShakeItem(i);
+								}
 							}
 							else
 							{
-								itemsToRemoveFromPlayer.Add(playerItem);
+								who.removeItemFromInventory(playerItem);
 
-								ButtonHolder.AddTransferredItemSprite(new TransferredItemSprite(
+								ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
 									playerItem.getOne(), inventoryPage.inventory.inventory[i].bounds.X, inventoryPage.inventory.inventory[i].bounds.Y)
 								);
 							}
 						}
 					}
 				}
-
-				itemsToRemoveFromPlayer.ForEach(x => who.removeItemFromInventory(x));
 			}
 
 			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
@@ -258,18 +264,22 @@ namespace StackToNearbyChests
 			return dChests;
 		}
 
-		private static IEnumerable<Chest> GetNearbyChests(Point originTile, int range, GameLocation gameLocation)
+		private static List<Chest> GetNearbyChests(Point originTile, int range, GameLocation gameLocation)
 		{
+			var chests = new List<Chest>((2 * range + 1) * (2 * range + 1));
+
 			// Chests
 			for (int dx = -range; dx <= range; dx++)
 			{
 				for (int dy = -range; dy <= range; dy++)
 				{
-					Point checkLocation = new Point(originTile.X + dx, originTile.Y + dy);
+					Vector2 tileLocation = new Vector2(originTile.X + dx, originTile.Y + dy);
 
-					if (gameLocation.getObjectAtTile(checkLocation.X, checkLocation.Y) is Chest chest)
+					if (gameLocation.objects.TryGetValue(tileLocation, out StardewValley.Object obj) && obj is Chest chest)
 					{
-						yield return chest;
+						chests.Add(chest);
+
+						ModEntry.Context.Monitor.Log($"Chest found at [{tileLocation.X}, {tileLocation.Y}].", StardewModdingAPI.LogLevel.Debug);
 					}
 				}
 			}
@@ -280,12 +290,16 @@ namespace StackToNearbyChests
 				Point kitchenStandingSpot = farmHouse.getKitchenStandingSpot();
 				Point fridgeTileLocation = new Point(kitchenStandingSpot.X + 2, kitchenStandingSpot.Y - 1); //Fridge spot relative to kitchen spot
 
-				if (Math.Abs(originTile.X - fridgeTileLocation.X) <= range && Math.Abs(originTile.Y - fridgeTileLocation.Y) <= range)
+				if (IsTileWithinRange(originTile, fridgeTileLocation, range))
 				{
 					if (farmHouse.fridge.Value != null)
-						yield return farmHouse.fridge.Value;
+					{
+						chests.Add(farmHouse.fridge.Value);
+					}
 					else
-						ModEntry.Context.Monitor.Log("StackToNearbyChests: could not find fridge!", StardewModdingAPI.LogLevel.Debug);
+					{
+						ModEntry.Context.Monitor.Log("Could not find kitchen fridge!", StardewModdingAPI.LogLevel.Debug);
+					}
 				}
 			}
 
@@ -294,17 +308,21 @@ namespace StackToNearbyChests
 			{
 				foreach (Building building in buildableGameLocation.buildings)
 				{
-					if (Math.Abs(building.tileX.Value - originTile.X) <= range && Math.Abs(building.tileY.Value - originTile.Y) <= range)
+					if (IsTileWithinRange(originTile, building.tileX.Value, building.tileY.Value, range))
 					{
 						if (building is JunimoHut junimoHut)
-							yield return junimoHut.output.Value;
-						if (building is Mill mill)
 						{
-							yield return mill.input.Value;
+							chests.Add(junimoHut.output.Value);
+						}
+						else if (building is Mill mill)
+						{
+							chests.Add(mill.input.Value);
 						}
 					}
 				}
 			}
+
+			return chests;
 		}
 
 		private static Point GetTileLocation(Vector2 position)
@@ -328,9 +346,19 @@ namespace StackToNearbyChests
 				(tileY * Game1.tileSize) + (Game1.tileSize / 2));
 		}
 
-		private static bool IsPositionWithinRange(Vector2 origin, Vector2 target, int range)
+		private static bool IsTileWithinRange(Point origin, Point target, int range)
 		{
 			return Math.Abs(origin.X - target.X) <= range && Math.Abs(origin.Y - target.Y) <= range;
+		}
+
+		private static bool IsTileWithinRange(Point origin, int targetX, int targetY, int range)
+		{
+			return Math.Abs(origin.X - targetX) <= range && Math.Abs(origin.Y - targetY) <= range;
+		}
+
+		private static bool IsPositionWithinRange(Vector2 origin, Vector2 target, int range)
+		{
+			return Math.Abs(origin.X - target.X) <= (range * Game1.tileSize) && Math.Abs(origin.Y - target.Y) <= (range * Game1.tileSize);
 		}
 	}
 }

@@ -11,49 +11,47 @@ namespace StackToNearbyChests
 	 *       Implement favorited items, which will be ignored by "Quick Stack To Nearby Chests" button.
 	 *       Postfix "Add To Existing Stacks" button logic to ignore favorited items as well.
 	 */
-	class ButtonHolder
+	class ConvenientInventory
 	{
-		private const int buttonID = 1070000;//A random number
+		private const int ButtonID = 120819;  // Unique indentifier
 
 		internal static Texture2D ButtonIcon { private get; set; }
 
-		private static ClickableTextureComponent button;
-		private static InventoryPage inventoryPage;
-		private static bool drawHoverText = false;
-		private static List<TransferredItemSprite> transferredItemSprites = new List<TransferredItemSprite>();
+		private static ClickableTextureComponent Button;
+		private static InventoryPage Page;
+		private static bool IsDrawToolTip = false;
+		private static readonly List<TransferredItemSprite> TransferredItemSprites = new List<TransferredItemSprite>();
 
 		//When InventoryPage constructed, create a new button
 		public static void Constructor(InventoryPage inventoryPage, int x, int y, int width, int height)
 		{
-			ButtonHolder.inventoryPage = inventoryPage;
+			Page = inventoryPage;
 
-			button = new ClickableTextureComponent("",
+			Button = new ClickableTextureComponent("",
 				new Rectangle(inventoryPage.xPositionOnScreen + width, inventoryPage.yPositionOnScreen + height / 3 - 64 + 8 + 80, 64, 64),
 				string.Empty,
-				"Stack To Nearby Chests",
+				"Quick Stack To Nearby Chests",
 				ButtonIcon,
 				Rectangle.Empty,
 				4f,
 				false)
 			{
-				myID = buttonID,
+				myID = ButtonID,
 				downNeighborID = 105,  // trash can
 				upNeighborID = 106,  // organize button
 				leftNeighborID = 11  // top-right inventory slot
 			};
 
-			inventoryPage.organizeButton.downNeighborID = buttonID;
-			inventoryPage.trashCan.upNeighborID = buttonID;
+			inventoryPage.organizeButton.downNeighborID = ButtonID;
+			inventoryPage.trashCan.upNeighborID = ButtonID;
 		}
 
 		public static void ReceiveLeftClick(int x, int y)
 		{
-			// TODO:
-
-			if (button != null && button.containsPoint(x, y))
+			if (Button != null && Button.containsPoint(x, y))
 			{
 				// TODO: Make button shake if successfully stacked
-				/*if */StackLogic.StackToNearbyChests(ModEntry.Config.Range, inventoryPage);
+				/*if */StackLogic.StackToNearbyChests(ModEntry.Config.Range, Page);
 				/* {
 				 *	this._iconShakeTimer[index] = Game1.currentGameTime.TotalGameTime.TotalSeconds + 0.5;
 				 * }
@@ -64,22 +62,22 @@ namespace StackToNearbyChests
 
 		public static void PerformHoverAction(int x, int y)
 		{
-			button.tryHover(x, y);
-			drawHoverText = button.containsPoint(x, y);
+			Button.tryHover(x, y);
+			IsDrawToolTip = Button.containsPoint(x, y);
 		}
 
 		public static void PopulateClickableComponentsList(InventoryPage inventoryPage)
 		{
-			inventoryPage.allClickableComponents.Add(button);
+			inventoryPage.allClickableComponents.Add(Button);
 		}
 
 		//Run before drawing hover texts. Use for drawing the button.
 		public static void TrashCanDrawn(ClickableTextureComponent textureComponent, SpriteBatch spriteBatch)
 		{
-			if (inventoryPage != null && inventoryPage.trashCan == textureComponent)
+			if (Page != null && Page.trashCan == textureComponent)
 			{
 				// Draw transferred item sprites
-				foreach (TransferredItemSprite transferredItemSprite in transferredItemSprites)
+				foreach (TransferredItemSprite transferredItemSprite in TransferredItemSprites)
 				{
 					transferredItemSprite.Draw(spriteBatch);
 				}
@@ -95,7 +93,7 @@ namespace StackToNearbyChests
 				}
 				*/
 
-				button?.draw(spriteBatch);
+				Button?.draw(spriteBatch);
 			}
 		}
 
@@ -103,9 +101,9 @@ namespace StackToNearbyChests
 		//This is run after drawing everything else in InventoryPage. Use for drawing hover text (on top of everything)
 		public static void PostDraw(SpriteBatch spriteBatch)
 		{
-			if (drawHoverText)
+			if (IsDrawToolTip)
 			{
-				IClickableMenu.drawToolTip(spriteBatch, button.hoverText, string.Empty, null, false, -1, 0, /*166*/-1, -1, null, -1);
+				IClickableMenu.drawToolTip(spriteBatch, Button.hoverText, string.Empty, null, false, -1, 0, /*166*/-1, -1, null, -1);
 
 				/*
 				 * TODO: Draw preview of all chests/inventories in range. (Should also show chest colors, fridge, hut, etc...)
@@ -116,11 +114,11 @@ namespace StackToNearbyChests
 		// Used to update transferredItemSprite animation
 		public static void Update(GameTime time)
 		{
-			for (int i = 0; i < transferredItemSprites.Count; i++)
+			for (int i = 0; i < TransferredItemSprites.Count; i++)
 			{
-				if (transferredItemSprites[i].Update(time))
+				if (TransferredItemSprites[i].Update(time))
 				{
-					transferredItemSprites.RemoveAt(i);
+					TransferredItemSprites.RemoveAt(i);
 					i--;
 				}
 			}
@@ -128,7 +126,7 @@ namespace StackToNearbyChests
 
 		public static void AddTransferredItemSprite(TransferredItemSprite itemSprite)
 		{
-			transferredItemSprites.Add(itemSprite);
+			TransferredItemSprites.Add(itemSprite);
 		}
 	}
 }

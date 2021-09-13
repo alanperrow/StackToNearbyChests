@@ -13,7 +13,7 @@ namespace StackToNearbyChests.Patches
 		{
             try
             {
-                ButtonHolder.Constructor(__instance, x, y, width, height);
+                ConvenientInventory.Constructor(__instance, x, y, width, height);
             }
             catch (Exception e)
             {
@@ -31,7 +31,7 @@ namespace StackToNearbyChests.Patches
 		{
 			try
 			{
-				ButtonHolder.ReceiveLeftClick(x, y);
+				ConvenientInventory.ReceiveLeftClick(x, y);
 			}
 			catch (Exception e)
 			{
@@ -45,7 +45,7 @@ namespace StackToNearbyChests.Patches
 		{
 			try
             {
-                ButtonHolder.PostDraw(b);
+                ConvenientInventory.PostDraw(b);
 			}
 			catch (Exception e)
 			{
@@ -59,7 +59,7 @@ namespace StackToNearbyChests.Patches
 		{
 			try
             {
-                ButtonHolder.PerformHoverAction(x, y);
+                ConvenientInventory.PerformHoverAction(x, y);
 			}
 			catch (Exception e)
 			{
@@ -79,7 +79,7 @@ namespace StackToNearbyChests.Patches
 			{
 				try
 				{
-					ButtonHolder.PopulateClickableComponentsList(inventoryPage);
+					ConvenientInventory.PopulateClickableComponentsList(inventoryPage);
 				}
 				catch (Exception e)
 				{
@@ -96,7 +96,7 @@ namespace StackToNearbyChests.Patches
 			{
 				try
 				{
-					ButtonHolder.Update(time);
+					ConvenientInventory.Update(time);
 				}
 				catch (Exception e)
 				{
@@ -116,7 +116,7 @@ namespace StackToNearbyChests.Patches
 		{
 			try
 			{
-				ButtonHolder.TrashCanDrawn(__instance, b);
+				ConvenientInventory.TrashCanDrawn(__instance, b);
 			}
 			catch (Exception e)
 			{

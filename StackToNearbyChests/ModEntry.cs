@@ -22,7 +22,7 @@ namespace StackToNearbyChests
 		{
 			Context = this;
 			Config = helper.ReadConfig<ModConfig>();
-			ButtonHolder.ButtonIcon = helper.Content.Load<Texture2D>(@"Assets\\icon.png");
+			ConvenientInventory.ButtonIcon = helper.Content.Load<Texture2D>(@"Assets\\icon.png");
 
 			helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 		}
@@ -63,13 +63,19 @@ namespace StackToNearbyChests
 					min: 0,
 					max: 10
 				);
-
 				api.RegisterSimpleOption(
 					mod: ModManifest,
 					optionName: "Quick stack into buildings?",
 					optionDesc: "If enabled, nearby buildings with inventories (such as Mills or Junimo Huts) will also be checked when quick stacking.",
 					optionGet: () => Config.IsStackIntoBuildingsWithInventories,
 					optionSet: value => Config.IsStackIntoBuildingsWithInventories = value
+				);
+				api.RegisterSimpleOption(
+					mod: ModManifest,
+					optionName: "Quick stack overflow items?",
+					optionDesc: "If enabled, quick stack will place as many items as possible into chests which contain that item, rather than just a single stack.",
+					optionGet: () => Config.IsStackOverflowItems,
+					optionSet: value => Config.IsStackOverflowItems = value
 				);
 			}
 
