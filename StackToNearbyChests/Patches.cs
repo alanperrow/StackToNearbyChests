@@ -3,6 +3,7 @@ using StardewValley.Menus;
 using HarmonyLib;
 using System;
 using Microsoft.Xna.Framework;
+using StardewModdingAPI;
 
 namespace StackToNearbyChests.Patches
 {
@@ -10,7 +11,14 @@ namespace StackToNearbyChests.Patches
 	{
 		public static void Postfix(InventoryPage __instance, int x, int y, int width, int height)
 		{
-			ButtonHolder.Constructor(__instance, x, y, width, height);
+            try
+            {
+                ButtonHolder.Constructor(__instance, x, y, width, height);
+            }
+            catch (Exception e)
+            {
+				ModEntry.Context.Monitor.Log($"Failed in {nameof(Postfix)}:\n{e}", LogLevel.Error);
+			}
 		}
 	}
 
@@ -21,21 +29,42 @@ namespace StackToNearbyChests.Patches
 		[HarmonyPatch(nameof(InventoryPage.receiveLeftClick))]
 		public static void ReceiveLeftClick_Postfix(int x, int y)
 		{
-			ButtonHolder.ReceiveLeftClick(x, y);
+			try
+			{
+				ButtonHolder.ReceiveLeftClick(x, y);
+			}
+			catch (Exception e)
+			{
+				ModEntry.Context.Monitor.Log($"Failed in {nameof(ReceiveLeftClick_Postfix)}:\n{e}", LogLevel.Error);
+			}
 		}
 
 		[HarmonyPostfix]
 		[HarmonyPatch(nameof(InventoryPage.draw))]
 		public static void Draw_Postfix(SpriteBatch b)
 		{
-			ButtonHolder.PostDraw(b);
+			try
+            {
+                ButtonHolder.PostDraw(b);
+			}
+			catch (Exception e)
+			{
+				ModEntry.Context.Monitor.Log($"Failed in {nameof(Draw_Postfix)}:\n{e}", LogLevel.Error);
+			}
 		}
 
 		[HarmonyPostfix]
 		[HarmonyPatch(nameof(InventoryPage.performHoverAction))]
 		public static void PerformHoverAction_Postfix(int x, int y)
 		{
-			ButtonHolder.PerformHoverAction(x, y);
+			try
+            {
+                ButtonHolder.PerformHoverAction(x, y);
+			}
+			catch (Exception e)
+			{
+				ModEntry.Context.Monitor.Log($"Failed in {nameof(PerformHoverAction_Postfix)}:\n{e}", LogLevel.Error);
+			}
 		}
 	}
 
@@ -48,7 +77,14 @@ namespace StackToNearbyChests.Patches
 		{
 			if (__instance is InventoryPage inventoryPage)
 			{
-				ButtonHolder.PopulateClickableComponentsList(inventoryPage);
+				try
+				{
+					ButtonHolder.PopulateClickableComponentsList(inventoryPage);
+				}
+				catch (Exception e)
+				{
+					ModEntry.Context.Monitor.Log($"Failed in {nameof(PopulateClickableComponentsList_Postfix)}:\n{e}", LogLevel.Error);
+				}
 			}
 		}
 
@@ -58,7 +94,14 @@ namespace StackToNearbyChests.Patches
 		{
 			if (__instance is InventoryPage inventoryPage)
 			{
-				ButtonHolder.Update(time);
+				try
+				{
+					ButtonHolder.Update(time);
+				}
+				catch (Exception e)
+				{
+					ModEntry.Context.Monitor.Log($"Failed in {nameof(Update_Postfix)}:\n{e}", LogLevel.Error);
+				}
 			}
 		}
 	}
@@ -71,7 +114,14 @@ namespace StackToNearbyChests.Patches
 		[HarmonyPatch(new Type[] { typeof(SpriteBatch) })]
 		public static void Draw_Postfix(ClickableTextureComponent __instance, SpriteBatch b)
 		{
-			ButtonHolder.TrashCanDrawn(__instance, b);
+			try
+			{
+				ButtonHolder.TrashCanDrawn(__instance, b);
+			}
+			catch (Exception e)
+			{
+				ModEntry.Context.Monitor.Log($"Failed in {nameof(Draw_Postfix)}:\n{e}", LogLevel.Error);
+			}
 		}
 	}
 }

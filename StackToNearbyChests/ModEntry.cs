@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using GenericModConfigMenu;
+using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
 using StackToNearbyChests.Patches;
 using StardewModdingAPI;
@@ -11,12 +12,15 @@ namespace StackToNearbyChests
 	/// <summary>The mod entry class loaded by SMAPI.</summary>
 	internal class ModEntry : Mod
 	{
+		public static ModEntry Context { get; private set; }
+
 		public static ModConfig Config { get; private set; }
 
 		/// <summary>The mod entry point, called after the mod is first loaded.</summary>
 		/// <param name="helper">Provides simplified APIs for writing mods.</param>
 		public override void Entry(IModHelper helper)
 		{
+			Context = this;
 			Config = helper.ReadConfig<ModConfig>();
 			ButtonHolder.ButtonIcon = helper.Content.Load<Texture2D>(@"Assets\\icon.png");
 
@@ -37,6 +41,39 @@ namespace StackToNearbyChests
 			);
 
 			harmony.PatchAll();
+
+			// Get Generic Mod Config Menu API (if it's installed)
+			var api = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+			if (api != null)
+            {
+				api.RegisterModConfig(
+					mod: ModManifest,
+					revertToDefault: () => Config = new ModConfig(),
+					saveToFile: () => Helper.WriteConfig(Config)
+				);
+
+				api.SetDefaultIngameOptinValue(ModManifest, true);
+
+				api.RegisterClampedOption(
+					mod: ModManifest,
+					optionName: "Range",
+					optionDesc: "How many tiles away from the player to search for nearby chests.",
+					optionGet: () => Config.Range,
+					optionSet: value => Config.Range = value,
+					min: 0,
+					max: 10
+				);
+
+				api.RegisterSimpleOption(
+					mod: ModManifest,
+					optionName: "Quick stack into buildings?",
+					optionDesc: "If enabled, nearby buildings with inventories (such as Mills or Junimo Huts) will also be checked when quick stacking.",
+					optionGet: () => Config.IsStackIntoBuildingsWithInventories,
+					optionSet: value => Config.IsStackIntoBuildingsWithInventories = value
+				);
+			}
+
+			
 		}
 	}
 }

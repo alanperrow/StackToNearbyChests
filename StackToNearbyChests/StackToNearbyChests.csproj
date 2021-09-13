@@ -66,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonHolder.cs" />
+    <Compile Include="Compatibility\IGenericModConfigMenuApi.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="ModConfig.cs" />
     <Compile Include="ModEntry.cs" />
