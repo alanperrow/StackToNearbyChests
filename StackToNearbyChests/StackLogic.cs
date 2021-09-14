@@ -78,16 +78,33 @@ namespace StackToNearbyChests
 			{
 				List<Item> itemsToRemoveFromPlayer = new List<Item>();
 
-				foreach (Item chestItem in chest.items)
+				ModEntry.Context.Monitor.Log($":: Chest capacity={chest.GetActualCapacity()}", StardewModdingAPI.LogLevel.Debug);
+
+				for (int ci = 0; ci < chest.GetActualCapacity(); ci++)
 				{
+					Netcode.NetObjectList<Item> chestItems = (chest.SpecialChestType == Chest.SpecialChestTypes.MiniShippingBin || chest.SpecialChestType == Chest.SpecialChestTypes.JunimoChest)
+						? chest.GetItemsForPlayer(who.UniqueMultiplayerID)
+						: chest.items;
+
+					if (ci >= chestItems.Count)
+					{
+						ModEntry.Context.Monitor.Log($":: :: Break @ ci={ci} >= chestItems.Count={chestItems.Count}.", StardewModdingAPI.LogLevel.Debug);
+						break;
+					}
+
+					ModEntry.Context.Monitor.Log($":: :: ci={ci}, chestItems.Count={chestItems.Count}", StardewModdingAPI.LogLevel.Debug);
+					Item chestItem = chestItems[ci];
+
 					if (chestItem == null)
 					{
 						continue;
 					}
 
-					for(int i = 0; i < inventoryPage.inventory.actualInventory.Count; i++)
+					IList<Item> playerInventory = inventoryPage.inventory.actualInventory;
+
+					for (int i = 0; i < inventoryPage.inventory.capacity; i++)
 					{
-						Item playerItem = inventoryPage.inventory.actualInventory[i];
+						Item playerItem = playerInventory[i];
 
 						if (playerItem == null)
 						{
@@ -98,32 +115,36 @@ namespace StackToNearbyChests
 
 						if (playerItem.canStackWith(chestItem))
 						{
-							movedAtLeastOne = true;
-
 							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
 							chestItem.Stack += amountToRemove;
+							movedAtLeastOne = amountToRemove > 0;
 
 							if (playerItem.Stack > amountToRemove)
 							{
 								playerItem.Stack -= amountToRemove;
 
-								if (ModEntry.Config.IsStackOverflowItems)
-								{
-									// Reference StardewValley.ItemGrabMenu ~ line 1000
-								}
-
 								/*
-								 * TODO: When chests are full and can't accept the item, make the item shake in inventory (as visual feedback for player).
-								 *		 Reference the "Add To Existing Stacks" code for making items shake.
+								 * TODO: Reference StardewValley.ItemGrabMenu ~ line 1000
 								 */
-								if (amountToRemove != 0)
+								if (ModEntry.Config.IsStackOverflowItems && Utility.canItemBeAddedToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity()))
+								{
+									playerItem = Utility.addItemToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity());
+
+									chest.add
+
+									/*
+									 * TODO: Does this work? Or do I have to reference list directly, then call who.removeItemFromInventory? 
+									 */
+								}
+								else
 								{
 									inventoryPage.inventory.ShakeItem(i);
 								}
+
 							}
 							else
 							{
-								who.removeItemFromInventory(playerItem);
+								who.removeItemFromInventory(i);
 
 								ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
 									playerItem.getOne(), inventoryPage.inventory.inventory[i].bounds.X, inventoryPage.inventory.inventory[i].bounds.Y)
