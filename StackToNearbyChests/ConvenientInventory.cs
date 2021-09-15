@@ -7,13 +7,12 @@ using static StardewValley.Menus.ItemGrabMenu;
 namespace StackToNearbyChests
 {
 	/*
-	 * TODO: Rename to InventoryHandler (or something like that). ((Mod will be named "Convenient Inventory".))
-	 *       Implement favorited items, which will be ignored by "Quick Stack To Nearby Chests" button.
-	 *       Postfix "Add To Existing Stacks" button logic to ignore favorited items as well.
+	 * TODO: Implement favorited items, which will be ignored by "Quick Stack To Nearby Chests" button.
+	 *       Prefix "Add To Existing Stacks" button logic to ignore favorited items as well.
 	 */
 	class ConvenientInventory
 	{
-		private const int ButtonID = 120819;  // Unique indentifier
+		private const int ButtonID = 918021;  // Unique indentifier
 
 		internal static Texture2D ButtonIcon { private get; set; }
 
@@ -22,7 +21,6 @@ namespace StackToNearbyChests
 		private static bool IsDrawToolTip = false;
 		private static readonly List<TransferredItemSprite> TransferredItemSprites = new List<TransferredItemSprite>();
 
-		//When InventoryPage constructed, create a new button
 		public static void Constructor(InventoryPage inventoryPage, int x, int y, int width, int height)
 		{
 			Page = inventoryPage;
@@ -65,7 +63,7 @@ namespace StackToNearbyChests
 			inventoryPage.allClickableComponents.Add(Button);
 		}
 
-		//Run before drawing hover texts. Use for drawing the button.
+		// Called before drawing tooltip. Use for drawing the button.
 		public static void TrashCanDrawn(ClickableTextureComponent textureComponent, SpriteBatch spriteBatch)
 		{
 			if (Page != null && Page.trashCan == textureComponent)
@@ -76,23 +74,12 @@ namespace StackToNearbyChests
 					transferredItemSprite.Draw(spriteBatch);
 				}
 
-				// Check if button is shaking
-				/*
-				if (this._iconShakeTimer.ContainsKey(i) && Game1.currentGameTime.TotalGameTime.TotalSeconds >= this._iconShakeTimer[i])
-				{
-					this._iconShakeTimer.Remove(i);
-				}
-				{
-					toDraw2 += 1f * new Vector2(Game1.random.Next(-1, 2), Game1.random.Next(-1, 2));
-				}
-				*/
-
 				Button?.draw(spriteBatch);
 			}
 		}
 
 
-		//This is run after drawing everything else in InventoryPage. Use for drawing hover text (on top of everything)
+		// Called after drawing everything else in InventoryPage. Use for drawing tooltip.
 		public static void PostDraw(SpriteBatch spriteBatch)
 		{
 			if (IsDrawToolTip)
@@ -102,6 +89,7 @@ namespace StackToNearbyChests
 				/*
 				 * TODO: Draw preview of all chests/inventories in range. (Should also show chest colors, fridge, hut, etc...)
 				 */
+
 			}
 		}
 

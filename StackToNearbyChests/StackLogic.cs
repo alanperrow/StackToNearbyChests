@@ -13,63 +13,11 @@ namespace StackToNearbyChests
 {
 	static class StackLogic
 	{
-		// TODO: Implement overflow stacking for this overloaded method as well (or maybe just delete this...)
-		internal static bool StackToNearbyChests(int range)
-		{
-			bool movedAtLeastOne = false;
-			Farmer who = Game1.player;
-
-			foreach (Chest chest in GetChestsAroundFarmer(who, range))
-			{
-				List<Item> itemsToRemoveFromPlayer = new List<Item>();
-
-				foreach (Item chestItem in chest.items)
-				{
-					if (chestItem == null)
-					{
-						continue;
-					}
-
-					foreach (Item playerItem in who.Items)
-					{
-						if (playerItem == null)
-						{
-							continue;
-						}
-
-						int remainingStackSize = chestItem.getRemainingStackSpace();
-
-						if (!itemsToRemoveFromPlayer.Contains(playerItem) && playerItem.canStackWith(chestItem))
-						{
-							movedAtLeastOne = true;
-							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
-							chestItem.Stack += amountToRemove;
-
-							if (playerItem.Stack > amountToRemove)
-							{
-								playerItem.Stack -= amountToRemove;
-							}
-							else
-							{
-								itemsToRemoveFromPlayer.Add(playerItem);
-							}
-						}
-					}
-				}
-
-				itemsToRemoveFromPlayer.ForEach(x => who.removeItemFromInventory(x));
-			}
-
-			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
-
-			return movedAtLeastOne;
-		}
-
 		internal static bool StackToNearbyChests(int range, InventoryPage inventoryPage)
 		{
 			if (inventoryPage == null)
 			{
-				return StackToNearbyChests(range);
+				return false;
 			}
 
 			bool movedAtLeastOneTotal = false;
@@ -196,7 +144,7 @@ namespace StackToNearbyChests
 			Point farmerTileLocation = who.getTileLocationPoint();
 			GameLocation gameLocation = who.currentLocation;
 
-			// Chest objects (includes mini fridge, stone chest)
+			// Chest objects (includes mini fridge, stone chest, mini shipping bin, junimo chest, ...)
 			if (sorted)
             {
 				foreach (Chest chest in GetNearbyChestsWithDistance(farmerPosition, range, gameLocation).OrderBy(x => x.Distance).Select(x => x.Chest))
@@ -234,7 +182,7 @@ namespace StackToNearbyChests
 			Vector2 tileLocation = Vector2.Zero;
 			int tx, ty, dx, dy;
 
-			// (i/ii) Chests
+			// Chests
 			for (int x = -range; x <= range; x++)
 			{
 				for (int y = -range; y <= range; y++)
@@ -245,43 +193,40 @@ namespace StackToNearbyChests
 					tileLocation.X = tx / Game1.tileSize;
 					tileLocation.Y = ty / Game1.tileSize;
 
-					// TODO: Make sure chest is not in-use by another player (easy fix to avoid item deletion)
 					if (gameLocation.objects.TryGetValue(tileLocation, out StardewValley.Object obj) && obj is Chest chest)
 					{
+						// Make sure chest is not in-use by another player (easy fix to avoid item deletion)
+						if (chest.GetMutex().IsLocked())
+						{
+							continue;
+						}
+
 						dx = tx - (int)origin.X;
 						dy = ty - (int)origin.Y;
 
 						dChests.Add(new ChestWithDistance(chest, Math.Sqrt(dx * dx + dy * dy)));
-
-						ModEntry.Context.Monitor.Log($"Chest found at [{tileLocation.X}, {tileLocation.Y}].", StardewModdingAPI.LogLevel.Debug);
 					}
 				}
 			}
 
-			// (iii) Kitchen fridge
+			// Kitchen fridge
 			if (gameLocation is FarmHouse farmHouse && farmHouse.upgradeLevel > 0)  // Kitchen only exists when upgradeLevel > 0
 			{
 				Vector2 fridgeTileCenterPosition = GetTileCenterPosition(farmHouse.fridgePosition);
 
 				if (IsPositionWithinRange(origin, fridgeTileCenterPosition, range))
 				{
-					if (farmHouse.fridge.Value != null)
+					if (farmHouse.fridge.Value != null && !farmHouse.fridge.Value.GetMutex().IsLocked())
 					{
 						dx = (int)fridgeTileCenterPosition.X - (int)origin.X;
 						dy = (int)fridgeTileCenterPosition.Y - (int)origin.Y;
 
 						dChests.Add(new ChestWithDistance(farmHouse.fridge.Value, Math.Sqrt(dx * dx + dy * dy)));
-
-						ModEntry.Context.Monitor.Log($"Kitchen fridge found at [{tileLocation.X}, {tileLocation.Y}].", StardewModdingAPI.LogLevel.Debug);
-					}
-					else
-					{
-						ModEntry.Context.Monitor.Log("Could not find kitchen fridge!", StardewModdingAPI.LogLevel.Debug);
 					}
 				}
 			}
 
-			// (iv) Buildings
+			// Buildings
 			if (gameLocation is BuildableGameLocation buildableGameLocation)
 			{
 				foreach (Building building in buildableGameLocation.buildings)
@@ -292,6 +237,11 @@ namespace StackToNearbyChests
 					{
 						if (building is JunimoHut junimoHut)
 						{
+							if (junimoHut.output.Value.GetMutex().IsLocked())
+							{
+								continue;
+							}
+
 							dx = (int)buildingTileCenterPosition.X - (int)origin.X;
 							dy = (int)buildingTileCenterPosition.Y - (int)origin.Y;
 
@@ -299,6 +249,11 @@ namespace StackToNearbyChests
 						}
 						else if (building is Mill mill)
 						{
+							if (mill.input.Value.GetMutex().IsLocked())
+							{
+								continue;
+							}
+
 							dx = (int)buildingTileCenterPosition.X - (int)origin.X;
 							dy = (int)buildingTileCenterPosition.Y - (int)origin.Y;
 
@@ -322,12 +277,14 @@ namespace StackToNearbyChests
 				{
 					Vector2 tileLocation = new Vector2(originTile.X + dx, originTile.Y + dy);
 
-					// TODO: Make sure chest is not in-use by another player (easy fix to avoid item deletion)
 					if (gameLocation.objects.TryGetValue(tileLocation, out StardewValley.Object obj) && obj is Chest chest)
 					{
-						chests.Add(chest);
+						if (chest.GetMutex().IsLocked())
+						{
+							continue;
+						}
 
-						ModEntry.Context.Monitor.Log($"Chest found at [{tileLocation.X}, {tileLocation.Y}].", StardewModdingAPI.LogLevel.Debug);
+						chests.Add(chest);
 					}
 				}
 			}
@@ -340,13 +297,9 @@ namespace StackToNearbyChests
 
 				if (IsTileWithinRange(originTile, fridgeTileLocation, range))
 				{
-					if (farmHouse.fridge.Value != null)
+					if (farmHouse.fridge.Value != null && !farmHouse.fridge.Value.GetMutex().IsLocked())
 					{
 						chests.Add(farmHouse.fridge.Value);
-					}
-					else
-					{
-						ModEntry.Context.Monitor.Log("Could not find kitchen fridge!", StardewModdingAPI.LogLevel.Debug);
 					}
 				}
 			}
@@ -360,10 +313,20 @@ namespace StackToNearbyChests
 					{
 						if (building is JunimoHut junimoHut)
 						{
+							if (junimoHut.output.Value.GetMutex().IsLocked())
+							{
+								continue;
+							}
+
 							chests.Add(junimoHut.output.Value);
 						}
 						else if (building is Mill mill)
 						{
+							if (mill.input.Value.GetMutex().IsLocked())
+							{
+								continue;
+							}
+
 							chests.Add(mill.input.Value);
 						}
 					}
@@ -410,76 +373,3 @@ namespace StackToNearbyChests
 		}
 	}
 }
-/* FOREACH CHEST
-				ModEntry.Context.Monitor.Log($":: Chest capacity={chest.GetActualCapacity()}", StardewModdingAPI.LogLevel.Debug);
-
-				for (int ci = 0; ci < chest.GetActualCapacity(); ci++)
-				{
-					Netcode.NetObjectList<Item> chestItems = (chest.SpecialChestType == Chest.SpecialChestTypes.MiniShippingBin || chest.SpecialChestType == Chest.SpecialChestTypes.JunimoChest)
-						? chest.GetItemsForPlayer(who.UniqueMultiplayerID)
-						: chest.items;
-
-					if (ci >= chestItems.Count)
-					{
-						ModEntry.Context.Monitor.Log($":: :: Break @ ci={ci} >= chestItems.Count={chestItems.Count}.", StardewModdingAPI.LogLevel.Debug);
-						break;
-					}
-
-					ModEntry.Context.Monitor.Log($":: :: ci={ci}, chestItems.Count={chestItems.Count}", StardewModdingAPI.LogLevel.Debug);
-					Item chestItem = chestItems[ci];
-
-					if (chestItem == null)
-					{
-						continue;
-					}
-
-					IList<Item> playerInventory = inventoryPage.inventory.actualInventory;
-
-					for (int i = 0; i < inventoryPage.inventory.capacity; i++)
-					{
-						Item playerItem = playerInventory[i];
-
-						if (playerItem == null)
-						{
-							continue;
-						}
-
-						int remainingStackSize = chestItem.getRemainingStackSpace();
-
-						if (playerItem.canStackWith(chestItem))
-						{
-							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
-							chestItem.Stack += amountToRemove;
-							movedAtLeastOne = amountToRemove > 0;
-
-							if (playerItem.Stack > amountToRemove)
-							{
-								playerItem.Stack -= amountToRemove;
-
-								// TODO: Reference StardewValley.ItemGrabMenu ~ line 1000
-								if (ModEntry.Config.IsStackOverflowItems && Utility.canItemBeAddedToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity()))
-								{
-									playerItem = Utility.addItemToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity());
-
-									chest.add
-
-									// TODO: Does this work? Or do I have to reference list directly, then call who.removeItemFromInventory?
-								}
-								else
-								{
-									inventoryPage.inventory.ShakeItem(i);
-								}
-
-							}
-							else
-							{
-								who.removeItemFromInventory(i);
-
-								ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
-									playerItem.getOne(), inventoryPage.inventory.inventory[i].bounds.X, inventoryPage.inventory.inventory[i].bounds.Y)
-								);
-							}
-						}
-					}
-				}
-				*/
