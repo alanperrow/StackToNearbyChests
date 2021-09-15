@@ -227,37 +227,40 @@ namespace StackToNearbyChests
 			}
 
 			// Buildings
-			if (gameLocation is BuildableGameLocation buildableGameLocation)
+			if (ModEntry.Config.IsStackIntoBuildingsWithInventories)
 			{
-				foreach (Building building in buildableGameLocation.buildings)
+				if (gameLocation is BuildableGameLocation buildableGameLocation)
 				{
-					Vector2 buildingTileCenterPosition = GetTileCenterPosition(building.tileX.Value, building.tileY.Value);
-
-					if (IsPositionWithinRange(origin, buildingTileCenterPosition, range))
+					foreach (Building building in buildableGameLocation.buildings)
 					{
-						if (building is JunimoHut junimoHut)
+						Vector2 buildingTileCenterPosition = GetTileCenterPosition(building.tileX.Value, building.tileY.Value);
+
+						if (IsPositionWithinRange(origin, buildingTileCenterPosition, range))
 						{
-							if (junimoHut.output.Value.GetMutex().IsLocked())
+							if (building is JunimoHut junimoHut)
 							{
-								continue;
+								if (junimoHut.output.Value.GetMutex().IsLocked())
+								{
+									continue;
+								}
+
+								dx = (int)buildingTileCenterPosition.X - (int)origin.X;
+								dy = (int)buildingTileCenterPosition.Y - (int)origin.Y;
+
+								dChests.Add(new ChestWithDistance(junimoHut.output.Value, Math.Sqrt(dx * dx + dy * dy)));
 							}
-
-							dx = (int)buildingTileCenterPosition.X - (int)origin.X;
-							dy = (int)buildingTileCenterPosition.Y - (int)origin.Y;
-
-							dChests.Add(new ChestWithDistance(junimoHut.output.Value, Math.Sqrt(dx * dx + dy * dy)));
-						}
-						else if (building is Mill mill)
-						{
-							if (mill.input.Value.GetMutex().IsLocked())
+							else if (building is Mill mill)
 							{
-								continue;
+								if (mill.input.Value.GetMutex().IsLocked())
+								{
+									continue;
+								}
+
+								dx = (int)buildingTileCenterPosition.X - (int)origin.X;
+								dy = (int)buildingTileCenterPosition.Y - (int)origin.Y;
+
+								dChests.Add(new ChestWithDistance(mill.input.Value, Math.Sqrt(dx * dx + dy * dy)));
 							}
-
-							dx = (int)buildingTileCenterPosition.X - (int)origin.X;
-							dy = (int)buildingTileCenterPosition.Y - (int)origin.Y;
-
-							dChests.Add(new ChestWithDistance(mill.input.Value, Math.Sqrt(dx * dx + dy * dy)));
 						}
 					}
 				}
@@ -305,29 +308,32 @@ namespace StackToNearbyChests
 			}
 
 			// Buildings
-			if (gameLocation is BuildableGameLocation buildableGameLocation)
+			if (ModEntry.Config.IsStackIntoBuildingsWithInventories)
 			{
-				foreach (Building building in buildableGameLocation.buildings)
+				if (gameLocation is BuildableGameLocation buildableGameLocation)
 				{
-					if (IsTileWithinRange(originTile, building.tileX.Value, building.tileY.Value, range))
+					foreach (Building building in buildableGameLocation.buildings)
 					{
-						if (building is JunimoHut junimoHut)
+						if (IsTileWithinRange(originTile, building.tileX.Value, building.tileY.Value, range))
 						{
-							if (junimoHut.output.Value.GetMutex().IsLocked())
+							if (building is JunimoHut junimoHut)
 							{
-								continue;
-							}
+								if (junimoHut.output.Value.GetMutex().IsLocked())
+								{
+									continue;
+								}
 
-							chests.Add(junimoHut.output.Value);
-						}
-						else if (building is Mill mill)
-						{
-							if (mill.input.Value.GetMutex().IsLocked())
+								chests.Add(junimoHut.output.Value);
+							}
+							else if (building is Mill mill)
 							{
-								continue;
-							}
+								if (mill.input.Value.GetMutex().IsLocked())
+								{
+									continue;
+								}
 
-							chests.Add(mill.input.Value);
+								chests.Add(mill.input.Value);
+							}
 						}
 					}
 				}
