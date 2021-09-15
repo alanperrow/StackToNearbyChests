@@ -13,6 +13,7 @@ namespace StackToNearbyChests
 {
 	static class StackLogic
 	{
+		// TODO: Implement overflow stacking for this overloaded method as well (or maybe just delete this...)
 		internal static bool StackToNearbyChests(int range)
 		{
 			bool movedAtLeastOne = false;
@@ -71,93 +72,117 @@ namespace StackToNearbyChests
 				return StackToNearbyChests(range);
 			}
 
-			bool movedAtLeastOne = false;
+			bool movedAtLeastOneTotal = false;
 			Farmer who = Game1.player;
 
 			foreach (Chest chest in GetChestsAroundFarmer(who, range, true))
 			{
-				List<Item> itemsToRemoveFromPlayer = new List<Item>();
+				List<Item> stackOverflowItems = new List<Item>();
 
-				ModEntry.Context.Monitor.Log($":: Chest capacity={chest.GetActualCapacity()}", StardewModdingAPI.LogLevel.Debug);
-
-				for (int ci = 0; ci < chest.GetActualCapacity(); ci++)
-				{
-					Netcode.NetObjectList<Item> chestItems = (chest.SpecialChestType == Chest.SpecialChestTypes.MiniShippingBin || chest.SpecialChestType == Chest.SpecialChestTypes.JunimoChest)
+				Netcode.NetObjectList<Item> chestItems = (chest.SpecialChestType == Chest.SpecialChestTypes.MiniShippingBin || chest.SpecialChestType == Chest.SpecialChestTypes.JunimoChest)
 						? chest.GetItemsForPlayer(who.UniqueMultiplayerID)
 						: chest.items;
 
-					if (ci >= chestItems.Count)
-					{
-						ModEntry.Context.Monitor.Log($":: :: Break @ ci={ci} >= chestItems.Count={chestItems.Count}.", StardewModdingAPI.LogLevel.Debug);
-						break;
-					}
-
-					ModEntry.Context.Monitor.Log($":: :: ci={ci}, chestItems.Count={chestItems.Count}", StardewModdingAPI.LogLevel.Debug);
-					Item chestItem = chestItems[ci];
-
-					if (chestItem == null)
+				// Fill chest stacks with player inventory items
+				foreach (Item chestItem in chestItems)
+				{
+					if (chestItem is null)
 					{
 						continue;
 					}
 
 					IList<Item> playerInventory = inventoryPage.inventory.actualInventory;
 
-					for (int i = 0; i < inventoryPage.inventory.capacity; i++)
+					foreach (Item playerItem in playerInventory)
 					{
-						Item playerItem = playerInventory[i];
-
-						if (playerItem == null)
+						if (playerItem is null || !playerItem.canStackWith(chestItem))
 						{
 							continue;
 						}
 
-						int remainingStackSize = chestItem.getRemainingStackSpace();
+						int beforeStack = playerItem.Stack;
+						playerItem.Stack = chestItem.addToStack(playerItem);
+						bool movedAtLeastOne = beforeStack != playerItem.Stack;
 
-						if (playerItem.canStackWith(chestItem))
+						movedAtLeastOneTotal = movedAtLeastOneTotal || movedAtLeastOne;
+
+						if (movedAtLeastOne)
 						{
-							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
-							chestItem.Stack += amountToRemove;
-							movedAtLeastOne = amountToRemove > 0;
+							ClickableComponent inventoryComponent = inventoryPage.inventory.inventory[playerInventory.IndexOf(playerItem)];
 
-							if (playerItem.Stack > amountToRemove)
+							ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
+								playerItem.getOne(), inventoryComponent.bounds.X, inventoryComponent.bounds.Y)
+							);
+							
+							if (playerItem.Stack == 0)
 							{
-								playerItem.Stack -= amountToRemove;
+								who.removeItemFromInventory(playerItem);
+							}
+						}
 
-								/*
-								 * TODO: Reference StardewValley.ItemGrabMenu ~ line 1000
-								 */
-								if (ModEntry.Config.IsStackOverflowItems && Utility.canItemBeAddedToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity()))
-								{
-									playerItem = Utility.addItemToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity());
+						if (chestItem.Stack == chestItem.maximumStackSize())
+						{
+							if (ModEntry.Config.IsStackOverflowItems)
+							{
+								stackOverflowItems.Add(chestItem.getOne());
+							}
 
-									chest.add
+							inventoryPage.inventory.ShakeItem(playerItem);
+							break;
+						}
+					}
+				}
 
-									/*
-									 * TODO: Does this work? Or do I have to reference list directly, then call who.removeItemFromInventory? 
-									 */
-								}
-								else
-								{
-									inventoryPage.inventory.ShakeItem(i);
-								}
+				// Add overflow stacks to chest when applicable
+				if (ModEntry.Config.IsStackOverflowItems && chestItems.Count < chest.GetActualCapacity())
+				{
+					IList<Item> playerInventory = inventoryPage.inventory.actualInventory;
 
+					foreach (Item stackOverflowItem in stackOverflowItems)
+					{
+						if (stackOverflowItem is null)
+						{
+							continue;
+						}
+
+						foreach (Item playerItem in playerInventory)
+						{
+							if (playerItem is null || !playerItem.canStackWith(stackOverflowItem))
+							{
+								continue;
+							}
+
+							int beforeStack = playerItem.Stack;
+							Item leftoverItem = chest.addItem(playerItem);
+							bool movedAtLeastOne = leftoverItem is null || beforeStack != leftoverItem.Stack;
+
+							movedAtLeastOneTotal = movedAtLeastOneTotal || movedAtLeastOne;
+
+							if (movedAtLeastOne)
+							{
+								ClickableComponent inventoryComponent = inventoryPage.inventory.inventory[playerInventory.IndexOf(playerItem)];
+
+								ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
+									playerItem.getOne(), inventoryComponent.bounds.X, inventoryComponent.bounds.Y)
+								);
+							}
+
+							if (leftoverItem is null)
+							{
+								who.removeItemFromInventory(playerItem);
 							}
 							else
 							{
-								who.removeItemFromInventory(i);
-
-								ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
-									playerItem.getOne(), inventoryPage.inventory.inventory[i].bounds.X, inventoryPage.inventory.inventory[i].bounds.Y)
-								);
+								inventoryPage.inventory.ShakeItem(playerItem);
 							}
 						}
 					}
 				}
 			}
 
-			Game1.playSound(movedAtLeastOne ? "Ship" : "cancel");
+			Game1.playSound(movedAtLeastOneTotal ? "Ship" : "cancel");
 
-			return movedAtLeastOne;
+			return movedAtLeastOneTotal;
 		}
 
 		internal static IEnumerable<Chest> GetChestsAroundFarmer(Farmer who, int range, bool sorted = false)
@@ -220,6 +245,7 @@ namespace StackToNearbyChests
 					tileLocation.X = tx / Game1.tileSize;
 					tileLocation.Y = ty / Game1.tileSize;
 
+					// TODO: Make sure chest is not in-use by another player (easy fix to avoid item deletion)
 					if (gameLocation.objects.TryGetValue(tileLocation, out StardewValley.Object obj) && obj is Chest chest)
 					{
 						dx = tx - (int)origin.X;
@@ -296,6 +322,7 @@ namespace StackToNearbyChests
 				{
 					Vector2 tileLocation = new Vector2(originTile.X + dx, originTile.Y + dy);
 
+					// TODO: Make sure chest is not in-use by another player (easy fix to avoid item deletion)
 					if (gameLocation.objects.TryGetValue(tileLocation, out StardewValley.Object obj) && obj is Chest chest)
 					{
 						chests.Add(chest);
@@ -383,3 +410,76 @@ namespace StackToNearbyChests
 		}
 	}
 }
+/* FOREACH CHEST
+				ModEntry.Context.Monitor.Log($":: Chest capacity={chest.GetActualCapacity()}", StardewModdingAPI.LogLevel.Debug);
+
+				for (int ci = 0; ci < chest.GetActualCapacity(); ci++)
+				{
+					Netcode.NetObjectList<Item> chestItems = (chest.SpecialChestType == Chest.SpecialChestTypes.MiniShippingBin || chest.SpecialChestType == Chest.SpecialChestTypes.JunimoChest)
+						? chest.GetItemsForPlayer(who.UniqueMultiplayerID)
+						: chest.items;
+
+					if (ci >= chestItems.Count)
+					{
+						ModEntry.Context.Monitor.Log($":: :: Break @ ci={ci} >= chestItems.Count={chestItems.Count}.", StardewModdingAPI.LogLevel.Debug);
+						break;
+					}
+
+					ModEntry.Context.Monitor.Log($":: :: ci={ci}, chestItems.Count={chestItems.Count}", StardewModdingAPI.LogLevel.Debug);
+					Item chestItem = chestItems[ci];
+
+					if (chestItem == null)
+					{
+						continue;
+					}
+
+					IList<Item> playerInventory = inventoryPage.inventory.actualInventory;
+
+					for (int i = 0; i < inventoryPage.inventory.capacity; i++)
+					{
+						Item playerItem = playerInventory[i];
+
+						if (playerItem == null)
+						{
+							continue;
+						}
+
+						int remainingStackSize = chestItem.getRemainingStackSpace();
+
+						if (playerItem.canStackWith(chestItem))
+						{
+							int amountToRemove = Math.Min(remainingStackSize, playerItem.Stack);
+							chestItem.Stack += amountToRemove;
+							movedAtLeastOne = amountToRemove > 0;
+
+							if (playerItem.Stack > amountToRemove)
+							{
+								playerItem.Stack -= amountToRemove;
+
+								// TODO: Reference StardewValley.ItemGrabMenu ~ line 1000
+								if (ModEntry.Config.IsStackOverflowItems && Utility.canItemBeAddedToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity()))
+								{
+									playerItem = Utility.addItemToThisInventoryList(playerItem, chestItems, chest.GetActualCapacity());
+
+									chest.add
+
+									// TODO: Does this work? Or do I have to reference list directly, then call who.removeItemFromInventory?
+								}
+								else
+								{
+									inventoryPage.inventory.ShakeItem(i);
+								}
+
+							}
+							else
+							{
+								who.removeItemFromInventory(i);
+
+								ConvenientInventory.AddTransferredItemSprite(new TransferredItemSprite(
+									playerItem.getOne(), inventoryPage.inventory.inventory[i].bounds.X, inventoryPage.inventory.inventory[i].bounds.Y)
+								);
+							}
+						}
+					}
+				}
+				*/

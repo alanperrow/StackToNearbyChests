@@ -50,13 +50,7 @@ namespace StackToNearbyChests
 		{
 			if (Button != null && Button.containsPoint(x, y))
 			{
-				// TODO: Make button shake if successfully stacked
-				/*if */StackLogic.StackToNearbyChests(ModEntry.Config.Range, Page);
-				/* {
-				 *	this._iconShakeTimer[index] = Game1.currentGameTime.TotalGameTime.TotalSeconds + 0.5;
-				 * }
-				 */
-				//(ItemGrabMenu)inventoryPage.
+				StackLogic.StackToNearbyChests(ModEntry.Config.Range, Page);
 			}
 		}
 
