@@ -1,13 +1,12 @@
 ﻿using GenericModConfigMenu;
 using HarmonyLib;
 using Microsoft.Xna.Framework.Graphics;
-using StackToNearbyChests.Patches;
+using ConvenientInventory.Patches;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using System;
-using System.Reflection;
 
-namespace StackToNearbyChests
+namespace ConvenientInventory
 {
 	/// <summary>The mod entry class loaded by SMAPI.</summary>
 	internal class ModEntry : Mod
@@ -67,15 +66,15 @@ namespace StackToNearbyChests
 					mod: ModManifest,
 					optionName: "Quick stack into buildings?",
 					optionDesc: "If enabled, nearby buildings with inventories (such as Mills or Junimo Huts) will also be checked when quick stacking.",
-					optionGet: () => Config.IsStackIntoBuildingsWithInventories,
-					optionSet: value => Config.IsStackIntoBuildingsWithInventories = value
+					optionGet: () => Config.IsQuickStackIntoBuildingsWithInventories,
+					optionSet: value => Config.IsQuickStackIntoBuildingsWithInventories = value
 				);
 				api.RegisterSimpleOption(
 					mod: ModManifest,
 					optionName: "Quick stack overflow items?",
 					optionDesc: "If enabled, quick stack will place as many items as possible into chests which contain that item, rather than just a single stack.",
-					optionGet: () => Config.IsStackOverflowItems,
-					optionSet: value => Config.IsStackOverflowItems = value
+					optionGet: () => Config.IsQuickStackOverflowItems,
+					optionSet: value => Config.IsQuickStackOverflowItems = value
 				);
 			}
 

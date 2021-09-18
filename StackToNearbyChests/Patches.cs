@@ -5,7 +5,7 @@ using System;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 
-namespace StackToNearbyChests.Patches
+namespace ConvenientInventory.Patches
 {
 	public class InventoryPageConstructorPatch
 	{

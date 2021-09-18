@@ -4,21 +4,24 @@ using StardewValley.Menus;
 using System.Collections.Generic;
 using static StardewValley.Menus.ItemGrabMenu;
 
-namespace StackToNearbyChests
+namespace ConvenientInventory
 {
 	/*
 	 * TODO: Implement favorited items, which will be ignored by "Quick Stack To Nearby Chests" button.
 	 *       Prefix "Add To Existing Stacks" button logic to ignore favorited items as well.
 	 */
-	class ConvenientInventory
+	internal class ConvenientInventory
 	{
 		private const int ButtonID = 918021;  // Unique indentifier
 
 		internal static Texture2D ButtonIcon { private get; set; }
 
-		private static ClickableTextureComponent Button;
-		private static InventoryPage Page;
-		private static bool IsDrawToolTip = false;
+		private static ClickableTextureComponent Button { get; set; }
+
+		private static InventoryPage Page { get; set; }
+
+		private static bool IsDrawToolTip { get; set; } = false;
+
 		private static readonly List<TransferredItemSprite> TransferredItemSprites = new List<TransferredItemSprite>();
 
 		public static void Constructor(InventoryPage inventoryPage, int x, int y, int width, int height)
@@ -48,7 +51,7 @@ namespace StackToNearbyChests
 		{
 			if (Button != null && Button.containsPoint(x, y))
 			{
-				StackLogic.StackToNearbyChests(ModEntry.Config.Range, Page);
+				QuickStackLogic.StackToNearbyChests(ModEntry.Config.Range, Page);
 			}
 		}
 

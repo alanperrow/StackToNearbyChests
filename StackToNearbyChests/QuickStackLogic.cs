@@ -9,9 +9,9 @@ using StardewValley.Menus;
 using StardewValley.Objects;
 using static StardewValley.Menus.ItemGrabMenu;
 
-namespace StackToNearbyChests
+namespace ConvenientInventory
 {
-	static class StackLogic
+	internal static class QuickStackLogic
 	{
 		internal static bool StackToNearbyChests(int range, InventoryPage inventoryPage)
 		{
@@ -70,7 +70,7 @@ namespace StackToNearbyChests
 
 						if (chestItem.Stack == chestItem.maximumStackSize())
 						{
-							if (ModEntry.Config.IsStackOverflowItems)
+							if (ModEntry.Config.IsQuickStackOverflowItems)
 							{
 								stackOverflowItems.Add(chestItem.getOne());
 							}
@@ -82,7 +82,7 @@ namespace StackToNearbyChests
 				}
 
 				// Add overflow stacks to chest when applicable
-				if (ModEntry.Config.IsStackOverflowItems && chestItems.Count < chest.GetActualCapacity())
+				if (ModEntry.Config.IsQuickStackOverflowItems && chestItems.Count < chest.GetActualCapacity())
 				{
 					IList<Item> playerInventory = inventoryPage.inventory.actualInventory;
 
@@ -227,7 +227,7 @@ namespace StackToNearbyChests
 			}
 
 			// Buildings
-			if (ModEntry.Config.IsStackIntoBuildingsWithInventories)
+			if (ModEntry.Config.IsQuickStackIntoBuildingsWithInventories)
 			{
 				if (gameLocation is BuildableGameLocation buildableGameLocation)
 				{
@@ -308,7 +308,7 @@ namespace StackToNearbyChests
 			}
 
 			// Buildings
-			if (ModEntry.Config.IsStackIntoBuildingsWithInventories)
+			if (ModEntry.Config.IsQuickStackIntoBuildingsWithInventories)
 			{
 				if (gameLocation is BuildableGameLocation buildableGameLocation)
 				{

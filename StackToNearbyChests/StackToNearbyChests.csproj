@@ -72,7 +72,7 @@
     <Compile Include="ModConfig.cs" />
     <Compile Include="ModEntry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StackLogic.cs" />
+    <Compile Include="QuickStackLogic.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="manifest.json" />

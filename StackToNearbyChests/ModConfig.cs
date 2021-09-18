@@ -1,11 +1,11 @@
-﻿namespace StackToNearbyChests
+﻿namespace ConvenientInventory
 {
-	public class ModConfig
+	internal class ModConfig
 	{
 		public int Range { get; set; } = 5;
 
-		public bool IsStackIntoBuildingsWithInventories { get; set; } = false;
+		public bool IsQuickStackIntoBuildingsWithInventories { get; set; } = false;
 
-		public bool IsStackOverflowItems { get; set; } = true;
+		public bool IsQuickStackOverflowItems { get; set; } = true;
 	}
 }
